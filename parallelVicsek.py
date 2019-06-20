@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
- MPI-based Swarm motion based on simplified Vicsek model
+ MPI-based Swarm motion using simplified Vicsek model
  © Copyright, UbiHPC
  Developped by Leonardo Camargo Forero, UbiHPC CEO
  email: lecf.77@gmail.com
