@@ -15,6 +15,7 @@
 
 import sys
 import optparse
+from os import popen
 from mpi4py import MPI
 from time import sleep
 from math import cos, sin, radians
@@ -26,8 +27,6 @@ from datetime import datetime
 
 ### Imports from The ARCHADE modules
 from etc.config import *
-#from lib.common.tactime import getTime, getDateAndTimeMilisecond
-from lib.physics import getDistanceBetweenPoints, getPoint
 ######################################
 
 ###############################################################################################################################
@@ -56,8 +55,22 @@ def plot_trajectories():
     """
     Plotting swarming trajectories
     """
-    pass
+    kml_trajectories_file = telemetry_folder+'/'+KML_TRAJECTORIES_FILE
+    popen('touch '+kml_trajectories_file)
+    while running:
 
+        kml_tf = open(kml_trajectories_file,'w')
+        for line in BEFORE_PLACEMARK_LINES:
+            kml_tf.write(line+'\n')
+        for r in range(1,size):
+            current_rank_file = telemetry_folder+'/rank_'+str(r)+'.xls'
+            for line in PLACEMARK_LINES:
+                kml_tf.write(line+'\n')
+                if '<coordinates>' in line:
+                    for location_line in open(current_rank_file):
+                        kml_tf.write(','.join(location_line.split()[LAT_LINE:ALT_LINE+1])+'\n')
+        for line in AFTER_PLACEMARK_LINES:
+            kml_tf.write(line+'\n')
 
 def startVehicle():
 
@@ -206,7 +219,9 @@ def main():
     comm.Barrier()
     ### Ground station area
     if rank == 0:
-
+        from multiprocessing import Process
+        plottingProcess=Process(target=plot_trajectories,args=())
+    	plottingProcess.start()
         introduce_myself()
         print(rankMsg+' Starting swarm motion simulation based on simplified Vicsek model')
         print(rankMsg+' Waiting for vehicles\' status ...')
@@ -224,11 +239,13 @@ def main():
         for r in range(1,size):
             rankDone=comm.recv(source=r)
             print('Rank '+str(r)+' has finished its vehicle simulation')
+        plottingProcess.terminate()
         print(rankMsg+' Finishing simulation')
     ###############################################################################################################################
 
     ### Vehicles area
     else:
+        from lib.physics import getDistanceBetweenPoints, getPoint
         connect_to_vehicle()
         startVehicle()
         comm.send(True,dest=0)

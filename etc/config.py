@@ -19,3 +19,49 @@ SIM_TIME=60
 INIT_STEPS=5
 DRONE_ALT=30
 DEFAULT_VEHICLE_TYPE = 'drone'
+KML_TRAJECTORIES_FILE='swarming.kml'
+BEFORE_PLACEMARK_LINES = [
+'<?xml version="1.0" encoding="UTF-8"?>',
+'<kml xmlns="http://www.opengis.net/kml/2.2">',
+'   <Document>',
+'       <name>HPRC-Vicsek</name>',
+'       <description>HPRC cluster flying as a bird\'s swarm based on simplified Vicsek model</description>',
+'       <Style id="blueLineGreenPoly">',
+'           <LineStyle>',
+'               <color>7dff0000</color>',
+'               <width>1024</width>',
+'           </LineStyle>',
+'           <PolyStyle>',
+'               <color>7f00ff00</color>',
+'           </PolyStyle>',
+'       </Style>',
+'       <Style id="greenLineGreenPoly">',
+'           <LineStyle>',
+'               <color>7f00ff00</color>',
+'               <width>1024</width>',
+'           </LineStyle>',
+'           <PolyStyle>',
+'               <color>7f00ff00</color>',
+'           </PolyStyle>',
+'       </Style>',
+]
+PLACEMARK_LINES = [
+'       <Placemark>',
+'           <name>hackrover1</name>',
+'           <description>Hacking rover1 vehicle</description>',
+'           <styleUrl>#blueLineGreenPoly</styleUrl>',
+'           <LineString>',
+'               <extrude>1</extrude>',
+'               <tessellate>1</tessellate>',
+'               <altitudeMode>relative</altitudeMode>',
+'               <coordinates>',
+'               </coordinates>',
+'           </LineString>',
+'       </Placemark>'
+]
+AFTER_PLACEMARK_LINES = [
+'   </Document>'
+'</kml>'
+]
+LAT_LINE = 1
+ALT_LINE = 3
