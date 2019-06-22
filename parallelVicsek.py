@@ -51,11 +51,19 @@ def introduce_myself():
     """
     pass
 
+def plot_trajectories():
+
+    """
+    Plotting swarming trajectories
+    """
+    pass
+
+
 def startVehicle():
 
     """
-	starting the vehicle
-	"""
+    starting the vehicle
+    """
     try:
         if not vehicle.armed:
             print(rankMsg+' Arming vehicle')
@@ -73,32 +81,32 @@ def startVehicle():
 
 def vicsek():
 
-	"""
-	Simulation of simplified Vicsek model
-	Noise excluded
-	"""
-	heading=INITIAL_HEADING
-	step=0
+    """
+    Simulation of simplified Vicsek model
+    Noise excluded
+    """
+    heading=INITIAL_HEADING
+    step=0
 
-	for x in range(0,sim_time):
+    for x in range(0,sim_time):
 
-		vx=VEHICLES_SPEED*cos(radians(heading))
-		vy=VEHICLES_SPEED*sin(radians(heading))
-		vz=0
-		velocity_msg = vehicle.message_factory.set_position_target_global_int_encode(
-			0,
-			0, 0,
-			mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-			0b0000111111000111,
-			0,
-			0,
-			0,
-			vx,
-			vy,
-			vz,
-			0, 0, 0,
-			0, 0)
-		vehicle.send_mavlink(velocity_msg)
+        vx=VEHICLES_SPEED*cos(radians(heading))
+        vy=VEHICLES_SPEED*sin(radians(heading))
+        vz=0
+        velocity_msg = vehicle.message_factory.set_position_target_global_int_encode(
+            0,
+            0, 0,
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            0b0000111111000111,
+            0,
+            0,
+            0,
+            vx,
+            vy,
+            vz,
+            0, 0, 0,
+            0, 0)
+        vehicle.send_mavlink(velocity_msg)
         heading_msg = vehicle.message_factory.command_long_encode(
             0, 0,
             mavutil.mavlink.MAV_CMD_CONDITION_YAW,
@@ -109,50 +117,50 @@ def vicsek():
             0,
             0, 0, 0)
         vehicle.send_mavlink(heading_msg)
-		cP=vehicle.location.global_relative_frame.__dict__
-		cla=cP['lat']; clo=cP['lon']; cal=cP['alt']
-		writeTelemetryFile(cla,clo,cal)
-		if step > INIT_STEPS:
-			for r in range(1,size):
-				if r != rank: comm.send([cla,clo,cal,heading], dest=r)
-			heading=0.0
-			neighbors=0
-			for r in range(1,size):
-				if r != rank:
-					eTel=comm.recv(source=r)
-					ecla= eTel[0]; eclo= eTel[1]; ecal=eTel[2]; ehea=eTel[3]
-					eDist=getDistanceBetweenPoints(cla,clo,ecla,eclo)
-					if eDist <= VICSEK_RADIUS:
-						neighbors+=1
-						print(rankMsg+' Vehicle rank '+str(r)+' is a neighbor of mine')
-						heading+=ehea
-			if neighbors > 0: heading=heading/neighbors
-		step+=1
-		sleep(1)
+        cP=vehicle.location.global_relative_frame.__dict__
+        cla=cP['lat']; clo=cP['lon']; cal=cP['alt']
+        writeTelemetryFile(cla,clo,cal)
+        if step > INIT_STEPS:
+            for r in range(1,size):
+                if r != rank: comm.send([cla,clo,cal,heading], dest=r)
+            heading=0.0
+            neighbors=0
+            for r in range(1,size):
+                if r != rank:
+                    eTel=comm.recv(source=r)
+                    ecla= eTel[0]; eclo= eTel[1]; ecal=eTel[2]; ehea=eTel[3]
+                    eDist=getDistanceBetweenPoints(cla,clo,ecla,eclo)
+                    if eDist <= VICSEK_RADIUS:
+                        neighbors+=1
+                        print(rankMsg+' Vehicle rank '+str(r)+' is a neighbor of mine')
+                        heading+=ehea
+            if neighbors > 0: heading=heading/neighbors
+        step+=1
+        sleep(1)
 
 def writeTelemetryFile(cla,clo,cal):
 
-	tFile=open(telemetryFile,'a')
-	msTime=datetime.now().strftime('%Y-%m-%d_%H:%M:%S.%f')
-	velocity=vehicle.velocity
-	vx=velocity[0]
-	vy=velocity[1]
-	vz=velocity[2]
-	heading=vehicle.heading
-	groundspeed=vehicle.groundspeed
-	airspeed=vehicle.airspeed
-	telemetryLine=str(msTime)+' '+str(cla)+' '+str(clo)+' '+str(cal) ## Time and location [lat,lon,alt]
-	telemetryLine+=' '+str(groundspeed)+' '+str(airspeed)
-	telemetryLine+=' '+str(vx)+' '+str(vy)+' '+str(vz)
-	telemetryLine+=' '+str(heading)
-	tFile.write(telemetryLine+'\n')
-	tFile.close()
+    tFile=open(telemetryFile,'a')
+    msTime=datetime.now().strftime('%Y-%m-%d_%H:%M:%S.%f')
+    velocity=vehicle.velocity
+    vx=velocity[0]
+    vy=velocity[1]
+    vz=velocity[2]
+    heading=vehicle.heading
+    groundspeed=vehicle.groundspeed
+    airspeed=vehicle.airspeed
+    telemetryLine=str(msTime)+' '+str(cla)+' '+str(clo)+' '+str(cal) ## Time and location [lat,lon,alt]
+    telemetryLine+=' '+str(groundspeed)+' '+str(airspeed)
+    telemetryLine+=' '+str(vx)+' '+str(vy)+' '+str(vz)
+    telemetryLine+=' '+str(heading)
+    tFile.write(telemetryLine+'\n')
+    tFile.close()
 
 def usage():
 
-	print('swarm.py -e <entities_file> -l <lat-lon-alt-heading> -a <ALTITUDE> -s <on> ')
-	print('or')
-	print('swarm.py --entities <entities_file> --location <location> --altitude <ALTITUDE> --startautopilot <on> ')
+    print('swarm.py -e <entities_file> -l <lat-lon-alt-heading> -a <ALTITUDE> -s <on> ')
+    print('or')
+    print('swarm.py --entities <entities_file> --location <location> --altitude <ALTITUDE> --startautopilot <on> ')
 
 ###############################################################################################################################optparse
 ###############################################################################################################################
@@ -226,9 +234,12 @@ def main():
         comm.send(True,dest=0)
         print(rankMsg+' Waiting for confirmation to start swarming')
         start_sim = comm.recv(source=0)
+        print(rankMsg+' Ready for swarming')
         if start_sim:
-            telemetryFile=telemetry_folder+'/rank_'+str(r)+'.xls'
+            telemetryFile=telemetry_folder+'/rank_'+str(rank)+'.xls'
             vicsek()
+            print(rankMsg+' Going home')
+            vehicle.mode = VehicleMode("RTL")
             comm.send(True,dest=0,tag=43)
         else:
             print(rankMsg+' Error in simulation starting')
