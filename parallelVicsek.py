@@ -22,11 +22,13 @@ from math import cos, sin, radians
 from pymavlink import mavutil
 from dronekit import connect, VehicleMode
 from datetime import datetime
+from multiprocessing import Process
 
 ######################################
 
 ### Imports from The ARCHADE modules
 from etc.config import *
+from lib.physics import getDistanceBetweenPoints, getPoint
 ######################################
 
 ###############################################################################################################################
@@ -57,7 +59,7 @@ def plot_trajectories():
     """
     kml_trajectories_file = telemetry_folder+'/'+KML_TRAJECTORIES_FILE
     popen('touch '+kml_trajectories_file)
-    while running:
+    while True:
 
         kml_tf = open(kml_trajectories_file,'w')
         for line in BEFORE_PLACEMARK_LINES:
@@ -65,12 +67,24 @@ def plot_trajectories():
         for r in range(1,size):
             current_rank_file = telemetry_folder+'/rank_'+str(r)+'.xls'
             for line in PLACEMARK_LINES:
+                if 'vehicle_name' in line: line=line.replace('vehicle_name',vehicle_type+'_'+str(r))
                 kml_tf.write(line+'\n')
                 if '<coordinates>' in line:
                     for location_line in open(current_rank_file):
                         kml_tf.write(','.join(location_line.split()[LAT_LINE:ALT_LINE+1])+'\n')
         for line in AFTER_PLACEMARK_LINES:
             kml_tf.write(line+'\n')
+
+def start_sitl():
+
+    """
+    Starting Ardupilot SITL
+    """
+    print(rankMsg+' Starting ArduPilot SITL')
+    ardupilot_vehicle = 'ArduCopter' if vehicle_type == 'drone' else 'APMrover2'
+    command = SITL_COMMAND+' '+ardupilot_vehicle+' -l '+LOCATION_FLAG
+    print(command)
+    popen(command)
 
 def startVehicle():
 
@@ -185,7 +199,7 @@ def main():
     """
     ### Global variables
     global comm, rank, size, rankMsg
-    global vehicle, vehicle_type, sim_time, telemetryFile
+    global vehicle, vehicle_type, sim_time, telemetryFile, telemetry_folder
     ###############################################################################################################################
 
     ### Parallel process rank assignment
@@ -219,10 +233,9 @@ def main():
     comm.Barrier()
     ### Ground station area
     if rank == 0:
-        from multiprocessing import Process
-        plottingProcess=Process(target=plot_trajectories,args=())
-    	plottingProcess.start()
-        introduce_myself()
+
+        plotting_process=Process(target=plot_trajectories,args=())
+    	introduce_myself()
         print(rankMsg+' Starting swarm motion simulation based on simplified Vicsek model')
         print(rankMsg+' Waiting for vehicles\' status ...')
         veh_stats = []
@@ -236,16 +249,20 @@ def main():
             sys.exit(2)
         else:
             for r in range(1,size): comm.send(True,dest=r)
+        sleep(3)
+        plotting_process.start()
         for r in range(1,size):
             rankDone=comm.recv(source=r)
             print('Rank '+str(r)+' has finished its vehicle simulation')
-        plottingProcess.terminate()
+        plotting_process.terminate()
         print(rankMsg+' Finishing simulation')
     ###############################################################################################################################
 
     ### Vehicles area
     else:
-        from lib.physics import getDistanceBetweenPoints, getPoint
+        sitl_process = Process(target=start_sitl,args=())
+        sitl_process.start()
+        sleep(5)
         connect_to_vehicle()
         startVehicle()
         comm.send(True,dest=0)
@@ -254,10 +271,12 @@ def main():
         print(rankMsg+' Ready for swarming')
         if start_sim:
             telemetryFile=telemetry_folder+'/rank_'+str(rank)+'.xls'
+            popen('touch '+telemetryFile)
             vicsek()
             print(rankMsg+' Going home')
             vehicle.mode = VehicleMode("RTL")
             comm.send(True,dest=0,tag=43)
+            sitl_process.terminate()
         else:
             print(rankMsg+' Error in simulation starting')
             sys.exit(2)

@@ -47,9 +47,9 @@ BEFORE_PLACEMARK_LINES = [
 ]
 PLACEMARK_LINES = [
 '       <Placemark>',
-'           <name>hackrover1</name>',
-'           <description>Hacking rover1 vehicle</description>',
-'           <styleUrl>#blueLineGreenPoly</styleUrl>',
+'           <name>vehicle_name</name>',
+'           <description>Vehicle trajectory</description>',
+#'           <styleUrl>#blueLineGreenPoly</styleUrl>',
 '           <LineString>',
 '               <extrude>1</extrude>',
 '               <tessellate>1</tessellate>',
@@ -65,3 +65,5 @@ AFTER_PLACEMARK_LINES = [
 ]
 LAT_LINE = 1
 ALT_LINE = 3
+LOCATION_FLAG = '-73.944397,2.148971,0,270'
+SITL_COMMAND = 'sim_vehicle.py -v'
