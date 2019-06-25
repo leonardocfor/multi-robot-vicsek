@@ -5,10 +5,10 @@ Each vehicle is to be executed on an independent computer, virtual machine, etc.
 
 The software can be used in real vehicles running ArduPilot (e.g. PX4 boards, etc) with little modification. 
 
-## LICENSE
+## License
 
 To use this software, please cite the article [Towards High Performance Robotic Computing](https://www.sciencedirect.com/science/article/pii/S092188901830232X) 
 
-## DISCLAIMER
+## Disclaimer
 
 The user of this software accepts that possible damages to moving vehicles can occur and release the author(s) of this software of any complaint or reclamation.
