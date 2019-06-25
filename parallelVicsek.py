@@ -20,23 +20,39 @@ from mpi4py import MPI
 from time import sleep
 from math import cos, sin, radians
 from pymavlink import mavutil
-from dronekit import connect, VehicleMode
+from dronekit import connect, VehicleMode, LocationGlobalRelative
 from datetime import datetime
 
 ######################################
 
 ### Imports from The ARCHADE modules
 from etc.config import *
+from lib.physics import get_distance_between_points, get_point
 ######################################
 
 ###############################################################################################################################
 ###############################################################################################################################
 
+def compute_initial_location():
+
+    """
+    Computing initial location
+    """
+    print(rank_msg+' Computing initial location')
+    global home_location
+    home_location = vehicle.home_location.__dict__
+    home_lat  =  home_location['lat']
+    home_lon  =  home_location['lon']
+    home_alt  =  home_location['alt']
+    print(rank_msg+'Home location is lat: '+str(home_lat)+', lon: '+str(home_lon)+', alt: '+str(home_alt))
+    splitted_angle=360/(size-1)
+    return get_point(home_lat,home_lon,home_alt,(rank-1)*splitted_angle,SEPARATION_RADIUS)
+
 def connect_to_vehicle():
 
     global vehicle
     try:
-        print(rankMsg+' Connecting to autopilot')
+        print(rank_msg+' Connecting to autopilot')
         vehicle = connect('127.0.0.1:'+ARDUPILOT_PORT, wait_ready=True)
     except:
         print('Unable to connect to vehicle')
@@ -50,6 +66,15 @@ def introduce_myself():
     """
     pass
 
+def move(lat,lon,alt):
+
+    """
+    Moving to selected location
+    """
+    print(rank_msg+' Moving to selected location, lat: '+str(lat)+', lon: '+str(lon)+', alt: '+str(alt))
+    vehicle.simple_goto(LocationGlobalRelative(lat, lon, alt))
+    writeTelemetryFile(lat,lon,alt)
+
 def plot_trajectories():
 
     """
@@ -57,7 +82,7 @@ def plot_trajectories():
     """
     kml_trajectories_file = telemetry_folder+'/'+KML_TRAJECTORIES_FILE
     popen('touch '+kml_trajectories_file)
-    while running:
+    while True:
 
         kml_tf = open(kml_trajectories_file,'w')
         for line in BEFORE_PLACEMARK_LINES:
@@ -65,6 +90,7 @@ def plot_trajectories():
         for r in range(1,size):
             current_rank_file = telemetry_folder+'/rank_'+str(r)+'.xls'
             for line in PLACEMARK_LINES:
+                if 'vehicle_name' in line: line=line.replace('vehicle_name',vehicle_type+'_'+str(r))
                 kml_tf.write(line+'\n')
                 if '<coordinates>' in line:
                     for location_line in open(current_rank_file):
@@ -79,12 +105,12 @@ def startVehicle():
     """
     try:
         if not vehicle.armed:
-            print(rankMsg+' Arming vehicle')
+            print(rank_msg+' Arming vehicle')
             while not vehicle.is_armable: sleep(1)
             vehicle.mode = VehicleMode('GUIDED')
             vehicle.armed = True
         if vehicle_type == 'drone':
-            print(rankMsg+' Taking off')
+            print(rank_msg+' Taking off')
             vehicle.simple_takeoff(DRONE_ALT)
             while abs(vehicle.location.global_relative_frame.alt - DRONE_ALT) > 1: pass
     except:
@@ -142,12 +168,14 @@ def vicsek():
                 if r != rank:
                     eTel=comm.recv(source=r)
                     ecla= eTel[0]; eclo= eTel[1]; ecal=eTel[2]; ehea=eTel[3]
-                    eDist=getDistanceBetweenPoints(cla,clo,ecla,eclo)
+                    eDist=get_distance_between_points(cla,clo,ecla,eclo)
                     if eDist <= VICSEK_RADIUS:
                         neighbors+=1
-                        print(rankMsg+' Vehicle rank '+str(r)+' is a neighbor of mine')
+                        #print(rank_msg+' Vehicle rank '+str(r)+' is a neighbor of mine')
                         heading+=ehea
-            if neighbors > 0: heading=heading/neighbors
+            if neighbors > 0:
+                print(rank_msg+' I have '+str(neighbors)+' neighbors')
+                heading=heading/neighbors
         step+=1
         sleep(1)
 
@@ -184,15 +212,15 @@ def main():
     The ARCHADE -- Parallel bioinspired Swarm motion based on Vicsek model
     """
     ### Global variables
-    global comm, rank, size, rankMsg
-    global vehicle, vehicle_type, sim_time, telemetryFile
+    global comm, rank, size, rank_msg
+    global vehicle, vehicle_type, sim_time, telemetryFile, home_location, telemetry_folder
     ###############################################################################################################################
 
     ### Parallel process rank assignment
     comm = MPI.COMM_WORLD
     size = comm.Get_size()
     rank = comm.Get_rank()
-    rankMsg = '[Rank '+str(rank)+' msg]'
+    rank_msg = '[Rank '+str(rank)+' msg]'
     ###############################################################################################################################
 
     ### Parameters reading
@@ -221,45 +249,50 @@ def main():
     if rank == 0:
         from multiprocessing import Process
         plottingProcess=Process(target=plot_trajectories,args=())
-    	plottingProcess.start()
         introduce_myself()
-        print(rankMsg+' Starting swarm motion simulation based on simplified Vicsek model')
-        print(rankMsg+' Waiting for vehicles\' status ...')
+        print(rank_msg+' Starting swarm motion simulation based on simplified Vicsek model')
+        print(rank_msg+' Waiting for vehicles\' status ...')
         veh_stats = []
         for r in range(1,size):
             vehicleReady=comm.recv(source=r)
             veh_stats.append(vehicleReady)
-            if vehicleReady: print(rankMsg+' Vehicle rank '+str(r)+' is ready for simulation')
+            if vehicleReady: print(rank_msg+' Vehicle rank '+str(r)+' is ready for simulation')
         if False in veh_stats:
             print('Vehicles starting had errors. Exiting simulation')
             for r in range(1,size): comm.send(False,dest=r)
             sys.exit(2)
         else:
             for r in range(1,size): comm.send(True,dest=r)
+        sleep(3)
+        plottingProcess.start()
         for r in range(1,size):
             rankDone=comm.recv(source=r)
             print('Rank '+str(r)+' has finished its vehicle simulation')
         plottingProcess.terminate()
-        print(rankMsg+' Finishing simulation')
+        print(rank_msg+' Finishing simulation')
     ###############################################################################################################################
 
     ### Vehicles area
     else:
-        from lib.physics import getDistanceBetweenPoints, getPoint
+
+        telemetryFile=telemetry_folder+'/rank_'+str(rank)+'.xls'
         connect_to_vehicle()
         startVehicle()
+        init_lat,init_lon,init_alt=compute_initial_location()
+        move(init_lat,init_lon,init_alt)
+        sleep(3)
         comm.send(True,dest=0)
-        print(rankMsg+' Waiting for confirmation to start swarming')
+        print(rank_msg+' Waiting for confirmation to start swarming')
         start_sim = comm.recv(source=0)
-        print(rankMsg+' Ready for swarming')
+        print(rank_msg+' Ready for swarming')
         if start_sim:
-            telemetryFile=telemetry_folder+'/rank_'+str(rank)+'.xls'
+
             vicsek()
-            print(rankMsg+' Going home')
+            print(rank_msg+' Going home')
             vehicle.mode = VehicleMode("RTL")
             comm.send(True,dest=0,tag=43)
         else:
-            print(rankMsg+' Error in simulation starting')
+            print(rank_msg+' Error in simulation starting')
             sys.exit(2)
 
     ###############################################################################################################################

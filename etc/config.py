@@ -14,7 +14,7 @@ HEADING='0'
 TELEMETRY_FOLDER='/TAC/data'
 VEHICLES_SPEED=10
 INITIAL_HEADING=90
-VICSEK_RADIUS=4
+VICSEK_RADIUS=5
 SIM_TIME=60
 INIT_STEPS=5
 DRONE_ALT=30
@@ -29,26 +29,27 @@ BEFORE_PLACEMARK_LINES = [
 '       <Style id="blueLineGreenPoly">',
 '           <LineStyle>',
 '               <color>7dff0000</color>',
-'               <width>1024</width>',
+'               <width>256</width>',
+'               <gx:physicalWidth>0.1</gx:physicalWidth>',
 '           </LineStyle>',
 '           <PolyStyle>',
 '               <color>7f00ff00</color>',
 '           </PolyStyle>',
 '       </Style>',
-'       <Style id="greenLineGreenPoly">',
-'           <LineStyle>',
-'               <color>7f00ff00</color>',
-'               <width>1024</width>',
-'           </LineStyle>',
-'           <PolyStyle>',
-'               <color>7f00ff00</color>',
-'           </PolyStyle>',
-'       </Style>',
+# '       <Style id="greenLineGreenPoly">',
+# '           <LineStyle>',
+# '               <color>7f00ff00</color>',
+# '               <width>1024</width>',
+# '           </LineStyle>',
+# '           <PolyStyle>',
+# '               <color>7f00ff00</color>',
+# '           </PolyStyle>',
+# '       </Style>',
 ]
 PLACEMARK_LINES = [
 '       <Placemark>',
-'           <name>hackrover1</name>',
-'           <description>Hacking rover1 vehicle</description>',
+'           <name>vehicle_name</name>',
+'           <description>Vehicle moving as part of  a bird\'s swarm</description>',
 '           <styleUrl>#blueLineGreenPoly</styleUrl>',
 '           <LineString>',
 '               <extrude>1</extrude>',
@@ -65,3 +66,4 @@ AFTER_PLACEMARK_LINES = [
 ]
 LAT_LINE = 1
 ALT_LINE = 3
+SEPARATION_RADIUS = 2

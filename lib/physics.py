@@ -14,14 +14,14 @@
 from geographiclib.geodesic import Geodesic
 
 
-def getDistanceBetweenPoints(lat1,lon1,lat2,lon2):
+def get_distance_between_points(lat1,lon1,lat2,lon2):
 
  	"""
 	Returns the distance in meters between two points (lat1,lon1) and (lat2,lon2)
  	"""
  	return Geodesic.WGS84.Inverse(lat1,lon1, lat2, lon2)['s12']
 
-def getPoint(lat,lon,alt,deg,dist):
+def get_point(lat,lon,alt,deg,dist):
 
 	"""
 	Returns the latitude and longitude of a point at a distance dist with a degree deg from lat,lon at the same alt
