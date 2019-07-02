@@ -12,7 +12,6 @@
 """
 
 ### imports ##########################
-
 import sys
 import optparse
 from os import popen
@@ -22,10 +21,9 @@ from math import cos, sin, radians
 from pymavlink import mavutil
 from dronekit import connect, VehicleMode, LocationGlobalRelative
 from datetime import datetime
-
 ######################################
 
-### Imports from The ARCHADE modules
+### Imports from software modules
 from etc.config import *
 from lib.physics import get_distance_between_points, get_point
 ######################################
@@ -46,7 +44,7 @@ def compute_initial_location():
     home_alt  =  home_location['alt']
     print(rank_msg+'Home location is lat: '+str(home_lat)+', lon: '+str(home_lon)+', alt: '+str(home_alt))
     splitted_angle=360/(size-1)
-    return get_point(home_lat,home_lon,home_alt,(rank-1)*splitted_angle,SEPARATION_RADIUS)
+    return get_point(home_lat,home_lon,DRONE_ALT,(rank-1)*splitted_angle,SEPARATION_RADIUS)
 
 def connect_to_vehicle():
 
@@ -71,14 +69,19 @@ def move(lat,lon,alt):
     """
     Moving to selected location
     """
+    stage = 'init'
     print(rank_msg+' Moving to selected location, lat: '+str(lat)+', lon: '+str(lon)+', alt: '+str(alt))
     vehicle.simple_goto(LocationGlobalRelative(lat, lon, alt))
-    writeTelemetryFile(lat,lon,alt)
+    while True:
+        cP=vehicle.location.global_relative_frame.__dict__
+        cla=cP['lat']; clo=cP['lon']; cal=cP['alt']
+        writeTelemetryFile(cla,clo,cal,stage)
+        if get_distance_between_points(cla,clo,lat,lon) < 1: break
 
-def plot_trajectories():
+def plot_trajectories_kml():
 
     """
-    Plotting swarming trajectories
+    Plotting swarming trajectories via KML File
     """
     kml_trajectories_file = telemetry_folder+'/'+KML_TRAJECTORIES_FILE
     popen('touch '+kml_trajectories_file)
@@ -104,15 +107,20 @@ def startVehicle():
     starting the vehicle
     """
     try:
+
         if not vehicle.armed:
             print(rank_msg+' Arming vehicle')
             while not vehicle.is_armable: sleep(1)
             vehicle.mode = VehicleMode('GUIDED')
             vehicle.armed = True
         if vehicle_type == 'drone':
+            stage = 'take_off'
             print(rank_msg+' Taking off')
             vehicle.simple_takeoff(DRONE_ALT)
-            while abs(vehicle.location.global_relative_frame.alt - DRONE_ALT) > 1: pass
+            while abs(vehicle.location.global_relative_frame.alt - DRONE_ALT) > 1:
+                cP=vehicle.location.global_relative_frame.__dict__
+                cla=cP['lat']; clo=cP['lon']; cal=cP['alt']
+                writeTelemetryFile(cla,clo,cal,stage)
     except:
         print('Unable to arm the vehicle')
         comm.send(False,dest=0)
@@ -126,6 +134,7 @@ def vicsek():
     """
     heading=INITIAL_HEADING
     step=0
+    stage = 'swarming'
 
     for x in range(0,sim_time):
 
@@ -158,7 +167,7 @@ def vicsek():
         vehicle.send_mavlink(heading_msg)
         cP=vehicle.location.global_relative_frame.__dict__
         cla=cP['lat']; clo=cP['lon']; cal=cP['alt']
-        writeTelemetryFile(cla,clo,cal)
+        writeTelemetryFile(cla,clo,cal,stage)
         if step > INIT_STEPS:
             for r in range(1,size):
                 if r != rank: comm.send([cla,clo,cal,heading], dest=r)
@@ -179,7 +188,7 @@ def vicsek():
         step+=1
         sleep(1)
 
-def writeTelemetryFile(cla,clo,cal):
+def writeTelemetryFile(cla,clo,cal,stage):
 
     tFile=open(telemetryFile,'a')
     msTime=datetime.now().strftime('%Y-%m-%d_%H:%M:%S.%f')
@@ -194,6 +203,7 @@ def writeTelemetryFile(cla,clo,cal):
     telemetryLine+=' '+str(groundspeed)+' '+str(airspeed)
     telemetryLine+=' '+str(vx)+' '+str(vy)+' '+str(vz)
     telemetryLine+=' '+str(heading)
+    telemetryLine+=' '+stage
     tFile.write(telemetryLine+'\n')
     tFile.close()
 
@@ -248,7 +258,7 @@ def main():
     ### Ground station area
     if rank == 0:
         from multiprocessing import Process
-        plottingProcess=Process(target=plot_trajectories,args=())
+        plottingProcess=Process(target=plot_trajectories_kml,args=())
         introduce_myself()
         print(rank_msg+' Starting swarm motion simulation based on simplified Vicsek model')
         print(rank_msg+' Waiting for vehicles\' status ...')
@@ -290,6 +300,17 @@ def main():
             vicsek()
             print(rank_msg+' Going home')
             vehicle.mode = VehicleMode("RTL")
+            home_lat  =  home_location['lat']
+            home_lon  =  home_location['lon']
+            home_alt  =  home_location['alt']
+            print(rank_msg+' Going home')
+            stage='going_home'
+            while True:
+                cP=vehicle.location.global_relative_frame.__dict__
+                cla=cP['lat']; clo=cP['lon']; cal=cP['alt']
+                writeTelemetryFile(cla,clo,cal,stage)
+                if get_distance_between_points(cla,clo,home_lat,home_lon) < 1 and abs(cal-home_alt) <1: break
+            print(rank_msg+' At home :D')
             comm.send(True,dest=0,tag=43)
         else:
             print(rank_msg+' Error in simulation starting')
