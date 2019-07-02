@@ -18,6 +18,8 @@ The user of this software accepts that possible damages to moving vehicles can o
 
 ## Usage 
 
+To execute the software, launch the following command:
+
 ```
 mpirun -np X --rankfile <rankfile> python parallelVicsek.py -v <vehicleType> -s <simTime> -t <telemetryFolder>
 
