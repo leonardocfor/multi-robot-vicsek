@@ -15,3 +15,26 @@ The user of this software accepts that possible damages to moving vehicles can o
 
 1. *Simplified Vicsek model*: The software does not currently consider the noise feature in the Vicsek model 
 2. *Required modifications* for real vehicles: The software does not currently include conflict detection
+
+## Usage 
+
+```
+mpirun -np X --rankfile <rankfile> python parallelVicsek.py -v <vehicleType> -s <simTime> -t <telemetryFolder>
+
+Where
+
+X = Quantity of vehicles 
+vehicleType = <drone, rover>
+simTime = Simulation time in seconds
+telemetryFolder = Shared folder in the HPRC cluster 
+```
+Finally the rankfile is used to execute a single MPI process per vehicle (HPRC node). An example is the following:
+
+```
+rank 0=<hostname_vehicle_1> slot=0
+rank 1=<hostname_vehicle_2> slot=0
+rank 2=<hostname_vehicle_3> slot=0
+rank 3=<hostname_vehicle_4> slot=0
+rank 4=<hostname_vehicle_5> slot=0
+```
+
