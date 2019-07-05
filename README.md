@@ -39,13 +39,9 @@ rank 2=<hostname_vehicle_3> slot=0
 rank 3=<hostname_vehicle_4> slot=0
 rank 4=<hostname_vehicle_5> slot=0
 ```
-
-<a href="http://www.youtube.com/watch?feature=player_embedded&v=TNnJWzH6bEY&feature=youtu.be
+Checkout a video example in here: <a href="http://www.youtube.com/watch?feature=player_embedded&v=TNnJWzH6bEY&feature=youtu.be
 " target="_blank"><img src="http://img.youtube.com/vi/TNnJWzH6bEY&feature=youtu.be/0.jpg" 
 alt="HPRC Swarming with 4 UAVs" width="240" height="180" border="10" /></a>
 
-https://www.youtube.com/watch?v=TNnJWzH6bEY&feature=youtu.be
 
-
-[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/TNnJWzH6bEY&feature=youtu.be/0.jpg)](http://www.youtube.com/watch?v=TNnJWzH6bEY&feature=youtu.be)
 
