@@ -47,5 +47,5 @@ alt="HPRC Swarming with 4 UAVs" width="240" height="180" border="10" /></a>
 https://www.youtube.com/watch?v=TNnJWzH6bEY&feature=youtu.be
 
 
-
+[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/TNnJWzH6bEY&feature=youtu.be/0.jpg)](http://www.youtube.com/watch?v=TNnJWzH6bEY&feature=youtu.be)
 
