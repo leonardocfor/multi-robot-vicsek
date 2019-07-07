@@ -5,6 +5,13 @@ Each vehicle is to be executed on an independent computer, virtual machine, comp
 
 The software can be used in real vehicles running ArduPilot (e.g. PX4 boards, etc) with little modification. 
 
+## Requirements
+
+```
+pip install dronekit geographiclib pymavlink
+apt-get install python-matplotlib python3-matplotlib
+```
+
 ## License
 
 To use this software, please cite the article [Towards High Performance Robotic Computing](https://www.sciencedirect.com/science/article/pii/S092188901830232X) 
