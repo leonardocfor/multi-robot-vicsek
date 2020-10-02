@@ -13,7 +13,7 @@
 
 ### imports ##########################
 import sys
-import optparse
+import argparse
 from os import popen
 from mpi4py import MPI
 from time import sleep
@@ -234,14 +234,14 @@ def main():
     ###############################################################################################################################
 
     ### Parameters reading
-    parser = optparse.OptionParser()
-    parser.add_option('-v','--vehicleType',dest='vehicle_type',help='Type of vehicle for swarming (drone, rover)')
-    parser.add_option('-s','--simtime',dest='sim_time',help='Simulation time [s]')
-    parser.add_option('-t','--telemetryFolder',dest='telemetry_folder',help='Folder to store telemetry files')
-    (options,arguments) = parser.parse_args()
-    vehicle_type = options.vehicle_type
-    sim_time = options.sim_time
-    telemetry_folder = options.telemetry_folder
+    parser = argparse.ArgumentParser(description='Multi-robot Vicsek')
+    parser.add_argument('-v','--vehicle_type',help='Type of vehicle for swarming (drone, rover)')
+    parser.add_argument('-s','--sim_time',help='Simulation time [s]')
+    parser.add_argument('-t','--telemetry_folder',help='Folder to store telemetry files')
+    arguments = parser.parse_args()
+    vehicle_type = arguments.vehicle_type
+    sim_time = arguments.sim_time
+    telemetry_folder = arguments.telemetry_folder
     if telemetry_folder == None:
         if rank == 0: print('Missing telemetry folder. Exiting')
         sys.exit(0)
