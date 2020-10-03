@@ -57,13 +57,6 @@ def connect_to_vehicle():
         comm.send(False,dest=0)
         sys.exit(2)
 
-def introduce_myself():
-
-    """
-    Software introduction
-    """
-    pass
-
 def move(lat,lon,alt):
 
     """
@@ -77,29 +70,6 @@ def move(lat,lon,alt):
         cla=cP['lat']; clo=cP['lon']; cal=cP['alt']
         writeTelemetryFile(cla,clo,cal,stage)
         if get_distance_between_points(cla,clo,lat,lon) < 1: break
-
-def plot_trajectories_kml():
-
-    """
-    Plotting swarming trajectories via KML File
-    """
-    kml_trajectories_file = telemetry_folder+'/'+KML_TRAJECTORIES_FILE
-    popen('touch '+kml_trajectories_file)
-    while True:
-
-        kml_tf = open(kml_trajectories_file,'w')
-        for line in BEFORE_PLACEMARK_LINES:
-            kml_tf.write(line+'\n')
-        for r in range(1,size):
-            current_rank_file = telemetry_folder+'/rank_'+str(r)+'.xls'
-            for line in PLACEMARK_LINES:
-                if 'vehicle_name' in line: line=line.replace('vehicle_name',vehicle_type+'_'+str(r))
-                kml_tf.write(line+'\n')
-                if '<coordinates>' in line:
-                    for location_line in open(current_rank_file):
-                        kml_tf.write(','.join(location_line.split()[LAT_LINE:ALT_LINE+1])+'\n')
-        for line in AFTER_PLACEMARK_LINES:
-            kml_tf.write(line+'\n')
 
 def startVehicle():
 
@@ -141,6 +111,7 @@ def vicsek():
         vx=VEHICLES_SPEED*cos(radians(heading))
         vy=VEHICLES_SPEED*sin(radians(heading))
         vz=0
+        # Setting vehicle speed
         velocity_msg = vehicle.message_factory.set_position_target_global_int_encode(
             0,
             0, 0,
@@ -155,6 +126,7 @@ def vicsek():
             0, 0, 0,
             0, 0)
         vehicle.send_mavlink(velocity_msg)
+        # Setting vehicle heading
         heading_msg = vehicle.message_factory.command_long_encode(
             0, 0,
             mavutil.mavlink.MAV_CMD_CONDITION_YAW,
@@ -207,12 +179,6 @@ def writeTelemetryFile(cla,clo,cal,stage):
     tFile.write(telemetryLine+'\n')
     tFile.close()
 
-def usage():
-
-    print('swarm.py -e <entities_file> -l <lat-lon-alt-heading> -a <ALTITUDE> -s <on> ')
-    print('or')
-    print('swarm.py --entities <entities_file> --location <location> --altitude <ALTITUDE> --startautopilot <on> ')
-
 ###############################################################################################################################optparse
 ###############################################################################################################################
 
@@ -257,9 +223,6 @@ def main():
     comm.Barrier()
     ### Ground station area
     if rank == 0:
-        from multiprocessing import Process
-        plottingProcess=Process(target=plot_trajectories_kml,args=())
-        introduce_myself()
         print(rank_msg+' Starting swarm motion simulation based on simplified Vicsek model')
         print(rank_msg+' Waiting for vehicles\' status ...')
         veh_stats = []
@@ -274,18 +237,16 @@ def main():
         else:
             for r in range(1,size): comm.send(True,dest=r)
         sleep(3)
-        plottingProcess.start()
         for r in range(1,size):
             rankDone=comm.recv(source=r)
             print('Rank '+str(r)+' has finished its vehicle simulation')
-        plottingProcess.terminate()
         print(rank_msg+' Finishing simulation')
     ###############################################################################################################################
 
     ### Vehicles area
     else:
 
-        telemetryFile=telemetry_folder+'/rank_'+str(rank)+'.xls'
+        telemetryFile=telemetry_folder+'/rank_'+str(rank)+'.txt'
         connect_to_vehicle()
         startVehicle()
         init_lat,init_lon,init_alt=compute_initial_location()
@@ -296,9 +257,7 @@ def main():
         start_sim = comm.recv(source=0)
         print(rank_msg+' Ready for swarming')
         if start_sim:
-
             vicsek()
-            print(rank_msg+' Going home')
             vehicle.mode = VehicleMode("RTL")
             home_lat  =  home_location['lat']
             home_lon  =  home_location['lon']

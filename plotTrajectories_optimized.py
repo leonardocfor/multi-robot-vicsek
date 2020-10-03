@@ -14,7 +14,7 @@
 ### imports ##########################
 import os.path
 import sys
-import optparse
+import argparse
 import subprocess
 import matplotlib.pyplot as plt
 import matplotlib.animation as anim
@@ -94,10 +94,10 @@ def main():
     global trajectories, counter
     global color_mapping
     counter = -1
-    parser = optparse.OptionParser()
-    parser.add_option('-q','--qOfVehicles',dest='q_of_vehicles',help='Quantity of vechiles')
-    parser.add_option('-t','--telemetryFolder',dest='telemetry_folder',help='Folder to store telemetry files')
-    (options,arguments) = parser.parse_args()
+    parser = argparse.ArgumentParser(description='Multi-robot Vicsek plotting')
+    parser.add_argument('-q','--q_of_vehicles',help='Quantity of vehicles')
+    parser.add_argument('-t','--telemetry_folder',help='Folder to store telemetry files')
+    arguments = parser.parse_args()
     q_of_vehicles = options.q_of_vehicles
     telemetry_folder = options.telemetry_folder
     if q_of_vehicles == None:
